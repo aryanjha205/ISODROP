@@ -21,13 +21,15 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
+BASE_DIR = Path(__file__).resolve().parent
+
 # Configuration
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'isodrop-secret-key-' + str(uuid.uuid4()))
     MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024  # 5GB
     CHUNK_SIZE = 1024 * 1024  # 1MB chunks
     MEMORY_THRESHOLD = 100 * 1024 * 1024  # 100MB - files larger than this use disk
-    UPLOAD_FOLDER = 'uploads'
+    UPLOAD_FOLDER = '/tmp/uploads' if os.environ.get('VERCEL') else 'uploads'
     FILE_EXPIRY_HOURS = 1
     RATE_LIMIT_MESSAGES = 100  # messages per minute
     ALLOWED_EXTENSIONS = {
@@ -149,15 +151,21 @@ def format_file_size(size_bytes):
 @app.route('/')
 def index():
     """Serve the main page"""
-    return send_file('index.html')
+    return send_file(BASE_DIR / 'index.html')
 
 
 @app.route('/api/qr-code')
 def get_qr_code():
     """Generate and return QR code for connection"""
-    local_ip = get_local_ip()
-    port = request.host.split(':')[-1] if ':' in request.host else '5000'
-    url = f"http://{local_ip}:{port}"
+    # If running on Vercel or public cloud, use the host header
+    if os.environ.get('VERCEL') or 'localhost' not in request.host:
+        protocol = 'https' if request.is_secure or os.environ.get('VERCEL') else 'http'
+        url = f"{protocol}://{request.host}"
+    else:
+        local_ip = get_local_ip()
+        port = request.host.split(':')[-1] if ':' in request.host else '5000'
+        url = f"http://{local_ip}:{port}"
+        
     qr_code = generate_qr_code(url)
     
     return jsonify({
