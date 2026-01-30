@@ -1,7 +1,7 @@
 const CACHE_NAME = 'isodrop-v1';
 const ASSETS = [
     '/',
-    '/static/manifest.json',
+    '/manifest.json',
     '/static/icon.png'
 ];
 
