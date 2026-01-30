@@ -551,15 +551,6 @@
             </div>
 
             <div class="header-actions">
-                <button class="btn-install" id="installBtn" onclick="toggleOverlay('install')">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <span>Install</span>
-                </button>
                 <div class="btn-icon" onclick="copyUrl()" title="Copy Hub URL">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -624,9 +615,9 @@
 
         <!-- Floating Install Bubble -->
         <div id="pwaBubble"
-            style="display:none; position: fixed; bottom: 24px; left: 24px; z-index: 1000; background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--primary); padding: 12px 16px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); align-items: center; gap: 12px; animation: slideInLeft 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            style="display:none; position: fixed; bottom: 120px; right: 24px; z-index: 1000; background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--primary); padding: 12px 18px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); align-items: center; gap: 12px; animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
             <div
-                style="width: 40px; height: 40px; background: var(--grad); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                style="width: 50px; height: 50px; background: var(--grad); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 0 4px 15px var(--primary-glow);">
                 📲</div>
             <div style="flex:1;">
                 <div style="font-weight: 700; font-size: 0.9rem;">Install Hub</div>
@@ -639,10 +630,10 @@
         </div>
 
         <style>
-            @keyframes slideInLeft {
+            @keyframes slideInRight {
                 from {
                     opacity: 0;
-                    transform: translateX(-50px);
+                    transform: translateX(50px);
                 }
 
                 to {
@@ -906,6 +897,9 @@
         ['dragleave', 'drop'].forEach(e => area.addEventListener(e, (ev) => { ev.preventDefault(); zone.style.display = 'none'; }));
         area.addEventListener('drop', (e) => hFiles(e.dataTransfer.files));
 
+        // Hide PWA bubble when typing to stay clear of input
+        inp.addEventListener('focus', () => { pwaBubble.style.display = 'none'; });
+
         // PWA Implementation logic
         const pwaBubble = document.getElementById('pwaBubble');
         const iosInst = document.getElementById('ios-inst');
@@ -953,7 +947,7 @@
         // PWA Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(reg => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
                     console.log('SW Registered', reg);
                 }).catch(err => {
                     console.log('SW Registration failed', err);
