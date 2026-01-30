@@ -1,0 +1,17 @@
+{
+    "name": "ISODROP | Instant Sharing",
+    "short_name": "ISODROP",
+    "description": "Premium real-time local file sharing hub.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0a0a12",
+    "theme_color": "#6c5ce7",
+    "icons": [
+        {
+            "src": "/static/icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
