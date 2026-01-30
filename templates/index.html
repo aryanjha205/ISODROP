@@ -905,6 +905,7 @@
         const iosInst = document.getElementById('ios-inst');
         const chromeInst = document.getElementById('chrome-inst');
         const otherInst = document.getElementById('other-inst');
+        const nativeBtn = document.getElementById('nativeInstallPrompt');
         let deferredPrompt;
 
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -913,7 +914,6 @@
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
 
-            // Always show bubble if not standalone, helps user find the install option
             pwaBubble.style.display = 'flex';
 
             if (isIOS) {
@@ -925,13 +925,10 @@
             }
         }
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // Native install button click handler
-            const nativeBtn = document.getElementById('nativeInstallPrompt');
-            if (nativeBtn) {
-                nativeBtn.onclick = () => {
+        // Robust Install Link
+        if (nativeBtn) {
+            nativeBtn.onclick = () => {
+                if (deferredPrompt) {
                     deferredPrompt.prompt();
                     deferredPrompt.userChoice.then((choice) => {
                         if (choice.outcome === 'accepted') {
@@ -939,18 +936,30 @@
                             pwaBubble.style.display = 'none';
                         }
                         deferredPrompt = null;
+                        nativeBtn.innerText = "Install Now";
                     });
-                };
-            }
+                } else {
+                    nativeBtn.innerText = "Still Preparing... (Try again in 5s)";
+                    setTimeout(() => nativeBtn.innerText = "Install Now", 2000);
+                    console.log("Installation prompt not yet available. Check console for manifest/SW errors.");
+                }
+            };
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('✅ PWA: beforeinstallprompt event fired');
+            e.preventDefault();
+            deferredPrompt = e;
+            if (nativeBtn) nativeBtn.innerText = "Install Now";
         });
 
         // PWA Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').then(reg => {
-                    console.log('SW Registered', reg);
+                    console.log('✅ PWA: Service Worker Registered', reg);
                 }).catch(err => {
-                    console.log('SW Registration failed', err);
+                    console.log('❌ PWA: Service Worker Registration failed', err);
                 });
             });
         }
