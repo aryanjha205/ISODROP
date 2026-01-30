@@ -184,6 +184,28 @@
             align-items: center;
         }
 
+        .btn-install {
+            display: none;
+            /* Hidden by default, shown via JS */
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-install:hover {
+            background: var(--grad);
+            border-color: transparent;
+            transform: translateY(-2px);
+        }
+
         .btn-icon {
             width: 42px;
             height: 42px;
@@ -551,6 +573,15 @@
             </div>
 
             <div class="header-actions">
+                <button class="btn-install" id="installBtn" onclick="toggleOverlay('install')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Install</span>
+                </button>
                 <div class="btn-icon" onclick="copyUrl()" title="Copy Hub URL">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -647,6 +678,38 @@
                 </div>
                 <button class="btn-disconnect" style="width: 100%; margin-top: 24px; padding: 12px;"
                     onclick="manualDisconnect()">Leave Hub Session</button>
+            </div>
+        </div>
+
+        <!-- Install Overlay -->
+        <div class="overlay" id="installOverlay" onclick="toggleOverlay('install')">
+            <div class="overlay-card" onclick="event.stopPropagation()" style="max-width:350px;">
+                <div class="close-overlay" onclick="toggleOverlay('install')"><svg width="24" height="24"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></div>
+                <div style="font-size: 3rem; margin-bottom: 15px;">📲</div>
+                <h3>Install ISODROP</h3>
+                <div id="install-instructions"
+                    style="text-align: left; margin-top: 20px; font-size: 0.9rem; line-height: 1.6;">
+                    <div id="ios-inst" style="display:none;">
+                        <p>1. Tap the <strong>Share</strong> icon (square with arrow).</p>
+                        <p>2. Scroll down and tap <strong>'Add to Home Screen'</strong>.</p>
+                        <p>3. Tap <strong>'Add'</strong> in the top right corner.</p>
+                    </div>
+                    <div id="chrome-inst" style="display:none;">
+                        <p>Click the <strong>'Install'</strong> button in the address bar or the
+                            <strong>'Download'</strong> menu option.
+                        </p>
+                        <button class="btn-disconnect" id="nativeInstallPrompt"
+                            style="width: 100%; margin-top: 15px; border-color: var(--primary);">Install Now</button>
+                    </div>
+                    <div id="other-inst">
+                        <p>Open your browser menu and look for <strong>'Install App'</strong> or <strong>'Add to Home
+                                Screen'</strong>.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -834,6 +897,45 @@
         ['dragenter', 'dragover'].forEach(e => area.addEventListener(e, (ev) => { ev.preventDefault(); zone.style.display = 'flex'; }));
         ['dragleave', 'drop'].forEach(e => area.addEventListener(e, (ev) => { ev.preventDefault(); zone.style.display = 'none'; }));
         area.addEventListener('drop', (e) => hFiles(e.dataTransfer.files));
+
+        // PWA Implementation logic
+        const installBtn = document.getElementById('installBtn');
+        const iosInst = document.getElementById('ios-inst');
+        const chromeInst = document.getElementById('chrome-inst');
+        const otherInst = document.getElementById('other-inst');
+        let deferredPrompt;
+
+        // Detect if standalone
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        if (!isStandalone) {
+            installBtn.style.display = 'flex';
+
+            // Detect platform for instructions
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+
+            if (isIOS) {
+                iosInst.style.display = 'block';
+                otherInst.style.display = 'none';
+            } else if (isChrome || ('BeforeInstallPromptEvent' in window)) {
+                chromeInst.style.display = 'block';
+                otherInst.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Native install button click handler
+            document.getElementById('nativeInstallPrompt').onclick = () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choice) => {
+                    if (choice.outcome === 'accepted') toggleOverlay('install');
+                    deferredPrompt = null;
+                });
+            };
+        });
 
         // PWA Registration
         if ('serviceWorker' in navigator) {
