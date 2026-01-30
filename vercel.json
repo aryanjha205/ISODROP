@@ -13,11 +13,11 @@
         },
         {
             "src": "/manifest.json",
-            "dest": "/static/manifest.json"
+            "dest": "/manifest.json"
         },
         {
             "src": "/sw.js",
-            "dest": "/static/sw.js"
+            "dest": "/sw.js"
         },
         {
             "src": "/(.*)",
