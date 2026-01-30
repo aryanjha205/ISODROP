@@ -1,7 +1,7 @@
 # ISODROP 💎🛸
 
 <p align="center">
-  <img src="static/icon.png" width="200" alt="ISODROP Icon">
+  <img src="icon.png" width="200" alt="ISODROP Icon">
 </p>
 
 **ISODROP** is a premium, real-time local file sharing web application designed for seamless data transfer across devices on the same Wi-Fi network. Built with a stunning glassmorphism aesthetic and a focus on speed, it provides an "AirDrop-like" experience for any browser.
@@ -61,3 +61,4 @@
 
 ---
 *Created with ❤️ for seamless sharing.*
+
