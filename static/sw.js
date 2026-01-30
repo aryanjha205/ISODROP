@@ -1,8 +1,10 @@
-const CACHE_NAME = 'isodrop-v4';
+const CACHE_NAME = 'isodrop-v6';
 const ASSETS = [
     '/',
     '/manifest.json',
-    '/static/icon.png'
+    '/static/icon.png',
+    '/static/css/style.css',
+    '/static/js/app.js'
 ];
 
 self.addEventListener('install', (event) => {
