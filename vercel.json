@@ -12,14 +12,6 @@
             "dest": "/static/$1"
         },
         {
-            "src": "/manifest.json",
-            "dest": "/manifest.json"
-        },
-        {
-            "src": "/sw.js",
-            "dest": "/sw.js"
-        },
-        {
             "src": "/(.*)",
             "dest": "/api/index.py"
         }

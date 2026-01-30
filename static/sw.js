@@ -1,4 +1,4 @@
-const CACHE_NAME = 'isodrop-v1';
+const CACHE_NAME = 'isodrop-v2';
 const ASSETS = [
     '/',
     '/manifest.json',
