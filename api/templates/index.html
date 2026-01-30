@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ISODROP | Instant Sharing</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#6c5ce7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/static/icon.png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Unbounded:wght@700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+    <div class="hub-card" id="dropArea">
+        <div class="prog-bar" id="progBar"></div>
+        <div class="drag-overlay" id="dragZone">
+            <span style="font-size: 4rem;">📦</span>
+            <h2 style="margin-top: 15px;">Drop to Share</h2>
+        </div>
+
+        <header class="hub-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                    </svg>
+                </div>
+                ISODROP
+                <div class="status-dot" id="dot"></div>
+            </div>
+
+            <div class="header-actions">
+                <div class="btn-icon" onclick="copyUrl()" title="Copy Hub URL">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                </div>
+                <div class="btn-icon" onclick="toggleOverlay('devices')" title="Active Devices">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span class="badge" id="discoveryCount">1</span>
+                </div>
+                <div class="btn-icon" onclick="toggleOverlay('qr')" title="Connect Mobile">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                </div>
+                <div class="btn-icon" onclick="resetHub()" title="Reset Hub"
+                    style="border-color: rgba(255, 107, 107, 0.3);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff7675" stroke-width="2.5">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </div>
+            </div>
+        </header>
+
+        <main class="hub-content" id="chat">
+            <div style="margin: auto; text-align: center; opacity: 0.4;" id="empty">
+                <div style="font-size: 4.5rem; margin-bottom: 15px;">📡</div>
+                <h2>Waiting for activity</h2>
+                <p style="font-size: 0.95rem; margin-top: 8px;">Scan OR Copy the Hub URL to join.</p>
+            </div>
+        </main>
+
+        <footer class="hub-footer">
+            <div class="input-bar">
+                <button class="btn-icon" style="border:none;" onclick="document.getElementById('fileInp').click()">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48">
+                        </path>
+                    </svg>
+                </button>
+                <input type="file" id="fileInp" hidden multiple onchange="hFiles(this.files)">
+                <input type="text" id="inp" placeholder="Type a message..." autocomplete="off">
+                <button class="btn-send" onclick="send()">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </footer>
+
+        <!-- Floating Install Bubble -->
+        <div id="pwaBubble"
+            style="display:none; position: fixed; bottom: 120px; right: 24px; z-index: 1000; background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--primary); padding: 12px 18px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); align-items: center; gap: 12px; animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <div
+                style="width: 50px; height: 50px; background: var(--grad); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 0 4px 15px var(--primary-glow);">
+                📲</div>
+            <div style="flex:1;">
+                <div style="font-weight: 700; font-size: 0.9rem;">Install Hub</div>
+                <div style="font-size: 0.75rem; opacity: 0.7;">Native experience</div>
+            </div>
+            <button onclick="toggleOverlay('install')"
+                style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 600; cursor: pointer;">Add</button>
+            <button onclick="this.parentElement.style.display='none'"
+                style="background:transparent; border:none; color:white; opacity:0.3; cursor:pointer;">✕</button>
+        </div>
+
+
+
+        <!-- QR Overlay -->
+        <div class="overlay" id="qrOverlay" onclick="toggleOverlay('qr')">
+            <div class="overlay-card" onclick="event.stopPropagation()">
+                <div class="close-overlay" onclick="toggleOverlay('qr')"><svg width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></div>
+                <h3>Connect Device</h3>
+                <div
+                    style="background: white; padding: 12px; border-radius: 20px; margin: 24px auto; width: fit-content;">
+                    <img src="data:image/png;base64,{{ qr_code }}" style="display: block; width: 180px; height: 180px;">
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Scan this code with your phone camera or trust
+                    the link to join the hub.</p>
+            </div>
+        </div>
+
+        <!-- Devices Overlay -->
+        <div class="overlay" id="devicesOverlay" onclick="toggleOverlay('devices')">
+            <div class="overlay-card" onclick="event.stopPropagation()">
+                <div class="close-overlay" onclick="toggleOverlay('devices')"><svg width="24" height="24"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></div>
+                <h3>Discovery Hub</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 8px;">Devices currently active on
+                    this Wi-Fi session.</p>
+                <div class="device-list" id="deviceList">
+                    <!-- Devices injected here -->
+                </div>
+                <button class="btn-disconnect" style="width: 100%; margin-top: 24px; padding: 12px;"
+                    onclick="manualDisconnect()">Leave Hub Session</button>
+            </div>
+        </div>
+
+        <!-- Install Overlay -->
+        <div class="overlay" id="installOverlay" onclick="toggleOverlay('install')">
+            <div class="overlay-card" onclick="event.stopPropagation()" style="max-width:350px;">
+                <div class="close-overlay" onclick="toggleOverlay('install')"><svg width="24" height="24"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></div>
+                <div style="font-size: 3rem; margin-bottom: 15px;">📲</div>
+                <h3>Install ISODROP</h3>
+                <div id="install-instructions"
+                    style="text-align: left; margin-top: 20px; font-size: 0.9rem; line-height: 1.6;">
+                    <div id="ios-inst" style="display:none;">
+                        <p>1. Tap the <strong>Share</strong> icon (square with arrow).</p>
+                        <p>2. Scroll down and tap <strong>'Add to Home Screen'</strong>.</p>
+                        <p>3. Tap <strong>'Add'</strong> in the top right corner.</p>
+                    </div>
+                    <div id="chrome-inst" style="display:none;">
+                        <p>Click the <strong>'Install'</strong> button in the address bar or the
+                            <strong>'Download'</strong> menu option.
+                        </p>
+                        <button class="btn-disconnect" id="nativeInstallPrompt"
+                            style="width: 100%; margin-top: 15px; border-color: var(--primary);">Install Now</button>
+                    </div>
+                    <div id="other-inst">
+                        <p>Open your browser menu and look for <strong>'Install App'</strong> or <strong>'Add to Home
+                                Screen'</strong>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Server configuration for external app.js
+        window.__ISODROP_CONFIG__ = {
+            url: "{{ server_url or '' }}"
+        };
+    </script>
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>
