@@ -5,23 +5,24 @@ import io
 import base64
 import uuid
 from flask import Flask, render_template, request, send_file, jsonify
-from flask_socketio import SocketIO, emit
-from flask_cors import CORS
+from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 app = Flask(__name__)
 CORS(app) # Enable CORS for all routes
 app.config['SECRET_KEY'] = 'secret!'
-# 100MB max payload just in case (though we chunk, standard flask limit might apply)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 
+
+# MongoDB Setup
+MONGO_URI = "mongodb+srv://bharatbytecom_db_user:1oDh5dhxaXHnR9Cv@cluster0.bzkmity.mongodb.net/?appName=Cluster0"
+client = MongoClient(MONGO_URI)
+db = client['isodrop_db']
+history_col = db['history']
+files_col = db['files']
 
 # Enable cors for socketio as well
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading' if not os.environ.get('VERCEL') else None)
 
-# In-memory storage
-# MESSAGES: list of dicts { 'type': 'text'|'file', 'content': ..., 'timestamp': ... }
-# FILES: dict { file_id: { 'name': str, 'data': bytes, 'mime': str } }
-HISTORY = []
-FILES = {}
 CLIENTS = {} # { sid: { 'id': short_uuid, 'name': str } }
 
 def get_local_ip():
@@ -101,11 +102,13 @@ def upload_file():
         file_id = str(uuid.uuid4())
         file_data = file.read()
         
-        FILES[file_id] = {
+        # Save to MongoDB
+        files_col.insert_one({
+            'file_id': file_id,
             'name': file.filename,
-            'data': file_data,
+            'data': base64.b64encode(file_data).decode('utf-8'), # Simplest for BSON
             'mime': file.content_type
-        }
+        })
         
         # Broadcast file message
         msg = {
@@ -115,19 +118,20 @@ def upload_file():
             'file_id': file_id,
             'size': len(file_data)
         }
-        HISTORY.append(msg)
+        history_col.insert_one(msg)
+        del msg['_id'] # Remove MongoDB internal ID for socket emission
         socketio.emit('new_message', msg)
         
         return jsonify({'success': True, 'file_id': file_id})
 
 @app.route('/download/<file_id>')
 def download_file(file_id):
-    file_info = FILES.get(file_id)
+    file_info = files_col.find_one({'file_id': file_id})
     if not file_info:
         return "File not found or expired", 404
     
     return send_file(
-        io.BytesIO(file_info['data']),
+        io.BytesIO(base64.b64decode(file_info['data'])),
         mimetype=file_info['mime'],
         as_attachment=True,
         download_name=file_info['name']
@@ -142,7 +146,10 @@ def handle_connect():
         'name': "Joining...",
         'platform': 'unknown'
     }
-    emit('load_history', HISTORY)
+    # Load history from MongoDB
+    history = list(history_col.find({}, {'_id': 0}).sort('_id', -1).limit(50))
+    history.reverse()
+    emit('load_history', history)
 
 @socketio.on('identify')
 def handle_identify(data):
@@ -166,14 +173,14 @@ def handle_message(data):
         'type': 'text',
         'content': data['content']
     }
-    HISTORY.append(msg)
+    history_col.insert_one(msg.copy()) # Copy to avoid mutation issues
+    if '_id' in msg: del msg['_id']
     emit('new_message', msg, broadcast=True)
 
 @socketio.on('clear_history')
 def handle_clear():
-    global HISTORY, FILES
-    HISTORY = []
-    FILES = {}
+    history_col.delete_many({})
+    files_col.delete_many({})
     emit('history_cleared', broadcast=True)
 
 if __name__ == '__main__':

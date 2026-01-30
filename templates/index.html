@@ -697,6 +697,7 @@
         socket.on('load_history', (h) => {
             if (h && h.length > 0) {
                 if (empty) empty.style.display = 'none';
+                chat.innerHTML = ''; // Clear existing to prevent loops
                 h.forEach(addMsg);
                 chat.scrollTop = chat.scrollHeight;
             }

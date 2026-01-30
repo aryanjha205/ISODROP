@@ -4,3 +4,5 @@ flask-cors
 qrcode[pil]
 pillow
 python-socketio
+pymongo
+dnspython
