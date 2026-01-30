@@ -1,27 +1,22 @@
-const CACHE_NAME = 'isodrop-v2';
+const CACHE_NAME = 'isodrop-v3';
 const ASSETS = [
     '/',
     '/manifest.json',
     '/static/icon.png'
 ];
 
-self.addEventListener('install', (e) => {
-    self.skipWaiting();
-    e.waitUntil(
+self.addEventListener('install', (event) => {
+    event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
         })
     );
 });
 
-self.addEventListener('activate', (e) => {
-    e.waitUntil(clients.claim());
-});
-
-self.addEventListener('fetch', (e) => {
-    e.respondWith(
-        caches.match(e.request).then((res) => {
-            return res || fetch(e.request);
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        caches.match(event.request).then((response) => {
+            return response || fetch(event.request);
         })
     );
 });

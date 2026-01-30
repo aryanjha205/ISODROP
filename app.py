@@ -82,7 +82,7 @@ def index():
 
 @app.route('/manifest.json')
 def serve_manifest():
-    return send_file('static/manifest.json', mimetype='application/manifest+json')
+    return send_file('static/manifest.json', mimetype='application/json')
 
 @app.route('/sw.js')
 def serve_sw():
